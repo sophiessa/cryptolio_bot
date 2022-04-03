@@ -6,7 +6,7 @@ import sql_db
 
 async def on_startup(_):
     sql_db.start_database()
-    print('ORMATT_BOT 2 IS RUNNING NOW!')
+    print('omratt_bot is started.....')
 
 handlers.register_handlers(dp)
 

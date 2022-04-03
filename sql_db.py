@@ -9,7 +9,7 @@ def start_database():
     cur  = base.cursor()
 
     if base:
-        print('Connected to the main.db')
+        print('connected to the main.db.......')
     
     base.execute('CREATE TABLE IF NOT EXISTS balances(id TEXT, coin_code TEXT, amount TEXT)')
 
@@ -19,9 +19,9 @@ async def add_coin(state, id):
         base.commit()
 
 async def del_coin(id: str, coin_code: str):
-    await cur.execute('DELETE FROM balances WHERE id == ? AND coin_code == ?', (id, coin_code))
-    await base.commit()
+    cur.execute(f"DELETE FROM balances WHERE id = {id} AND coin_code = '{coin_code}'")
+    base.commit()
 
-async def get_balance(id):
-    return cur.execute(f'SELECT * FROM balances WHERE id == {id} ORDER BY amount DESC;')
+async def get_coins(id):
+    return cur.execute(f'SELECT * FROM balances WHERE id == {id}')
 
