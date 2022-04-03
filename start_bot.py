@@ -6,7 +6,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 dotenv.load_dotenv()
 
-token   = os.getenv('TOKEN')
+token   = os.getenv('TELEGRAM_TOKEN')
 storage = MemoryStorage()
 
 

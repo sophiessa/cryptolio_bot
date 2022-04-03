@@ -23,5 +23,5 @@ async def del_coin(id: str, coin_code: str):
     await base.commit()
 
 async def get_balance(id):
-    return cur.execute('SELECT * FROM balances WHERE id == ?', (id,))
+    return cur.execute(f'SELECT * FROM balances WHERE id == {id} ORDER BY amount DESC;')
 

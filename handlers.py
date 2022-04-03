@@ -1,17 +1,17 @@
-from os import stat
-import requests, time
+import requests, time, os, dotenv
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
-
 from start_bot import dp, bot
 import sql_db
+from keyboards import addOrDeleteKeyboard
+
+dotenv.load_dotenv()
 
 headers = {
-    'X-CMC_PRO_API_KEY': '1e7ca19f-f039-4cfc-b736-b29eea6adf3e',
+    'X-CMC_PRO_API_KEY': os.getenv('COINMARKETCAP_TOKEN'),
 }
 
 
@@ -21,7 +21,7 @@ class FSMClient(StatesGroup):
     amount =    State()
 
 async def start(message: types.Message):
-    await message.answer('Hi, what do you want to do?', reply_markup=ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton('/add'), KeyboardButton('/balance'), KeyboardButton('/cancel'), KeyboardButton('/portfolio')))
+    await message.answer('Здравствуйте, что бы вы хотели сделать?.', reply_markup=addOrDeleteKeyboard)
 
 async def show_balance(message: types.Message):
     coins = await sql_db.get_balance(message.from_user.id)
@@ -86,16 +86,15 @@ async def portfolio(message: types.Message):
             continue
 
         await message.answer(f'Crypto: {coin[1]} \nAmount: {coin[2]} \nPrice: %.2f$' % price)
-    # await message.answer(f'Сейчас: {time.localtime()[2]}/{time.localtime()[1]}/{time.localtime()[0]} | Время: {time.localtime()[3]}:{time.localtime()[4]}:{time.localtime()[5]}')
-    # await message.answer("На вашем балансе %.2f$!" % sum)
-
+    
 def register_handlers(dp: Dispatcher):
-    dp.register_message_handler(cancel, commands=['cancel'], state='*')
-    dp.register_message_handler(add_coin, commands=['add'], state=None)
+    dp.register_message_handler(start, commands=['start'])
+    
+    dp.register_message_handler(cancel, Text(equals='Отменить'), state='*')
+    dp.register_message_handler(add_coin, Text(equals='Добавить'), state=None)
     dp.register_message_handler(set_code, state=FSMClient.coin_code)
     dp.register_message_handler(set_amount, state=FSMClient.amount)
 
-    dp.register_message_handler(show_balance, commands=['balance'])
-    dp.register_message_handler(start, commands=['start'])
-    dp.register_message_handler(portfolio, commands=['portfolio'])
+    dp.register_message_handler(show_balance, Text(equals='Баланс'))
+    dp.register_message_handler(portfolio, Text(equals='Моё портфолио'))
 
