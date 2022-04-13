@@ -6,7 +6,7 @@ import sql_db
 
 async def on_startup(_):
     sql_db.start_database()
-    print('omratt_bot is started.....')
+    print('cryptolio_bot is started.....')
 
 handlers.register_handlers(dp)
 

@@ -1,5 +1,4 @@
 #general imports
-from email import message
 import requests, time, os, dotenv
 
 #aiogram imports
@@ -12,7 +11,8 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 #local imports
 from start_bot import dp, bot
 import sql_db
-from keyboards import addOrDeleteKeyboard, seeBalancePortfoliKeyboard, cancelKeyboard
+import keyboards as kbs
+import texts as txs
 
 dotenv.load_dotenv()
 
@@ -27,37 +27,53 @@ class FSMClient(StatesGroup):
     amount =    State()
 
 async def start(message: types.Message):
-    await message.answer('Здравствуйте, что бы вы хотели сделать?', reply_markup=addOrDeleteKeyboard)
+    lang = message.from_user.language_code
+    text = txs.start_message(lang)
+    start_keyboard = kbs.basic_markup(lang)
+    await message.answer(text, reply_markup=start_keyboard)
 
 async def add_coin(message: types.Message):
+    lang = message.from_user.language_code
+    text = txs.add_coin_code(lang)
+    cancel_keyboard = kbs.cancel_markup(lang)
     await FSMClient.coin_code.set()
-    await message.answer('Введите код криптовалюты!\n[BTC, ETH, TRX и т.д.]', reply_markup=cancelKeyboard)
+    await message.answer(text=text, reply_markup=cancel_keyboard)
 
 async def set_code(message: types.Message, state: FSMContext):
     #TODO: implement merge of the same cryptocurrency
+    lang = message.from_user.language_code
+    text = txs.add_coin_amount(lang)
+    cancel_keyboard = kbs.cancel_markup(lang)
     async with state.proxy() as data:
         data['coin_code'] = message.text
     await FSMClient.next()
-    await message.reply('Какое количество у вас имеется?', reply_markup=cancelKeyboard)
+    await message.reply(text=text, reply_markup=cancel_keyboard)
 
 async def set_amount(message: types.Message, state: FSMContext):
+    lang = message.from_user.language_code
+    text = txs.add_coin_added(lang)
+    basic_keyboard = kbs.basic_markup(lang)
     async with state.proxy() as data:
         data['amount'] = message.text
     await sql_db.add_coin(state, message.from_user.id)
     await FSMClient.next()
-    await message.reply('Добавлено в ваш кошелек!', reply_markup=seeBalancePortfoliKeyboard)
+    await message.reply(text=text, reply_markup=basic_keyboard)
     await state.finish()
 
 
 async def cancel(message: types.Message, state: FSMContext):
+    lang = message.from_user.language_code
+    text = txs.add_coin_cancel(lang)
+    basic_keyboard = kbs.basic_markup(lang)
     curr_state = await state.get_state()
     if curr_state is None:
         return
     await state.finish()
-    await message.reply('Загрузка успешно отменена!', reply_markup=seeBalancePortfoliKeyboard) 
+    await message.reply(text=text, reply_markup=basic_keyboard) 
 
 
 async def show_portfolio(message: types.Message):
+    lang = message.from_user.language_code
     coins = await sql_db.get_coins(message.from_user.id)
     for coin in coins:
         price = 0
@@ -72,11 +88,14 @@ async def show_portfolio(message: types.Message):
             price = float(result.json()['data']['quote']['USD']['price'])
         except KeyError:
             continue
-
-        await message.answer(f'Криптовалюта: {coin[1]} \nКоличество: {coin[2]} \nВ Доллараx: %.2f$' % price, reply_markup=seeBalancePortfoliKeyboard)
+        
+        text = txs.show_portfolio_text(coin, price, lang)
+        basic_keyboard = kbs.basic_markup(lang)
+        await message.answer(text=text, reply_markup=basic_keyboard)
     
 
 async def show_balance(message: types.Message):
+    lang = message.from_user.language_code
     coins = await sql_db.get_coins(message.from_user.id)
     sum = 0
     for coin in coins:
@@ -91,30 +110,36 @@ async def show_balance(message: types.Message):
             sum += float(result.json()['data']['quote']['USD']['price'])
         except KeyError:
             continue
-    await message.answer(f'Сейчас: {time.localtime()[2]}/{time.localtime()[1]}/{time.localtime()[0]} | Время: {time.localtime()[3]}:{time.localtime()[4]}:{time.localtime()[5]}')
-    await message.answer("На вашем балансе %.2f$!" % sum, reply_markup=seeBalancePortfoliKeyboard)
+    # await message.answer(f'Сейчас: {time.localtime()[2]}/{time.localtime()[1]}/{time.localtime()[0]} | Время: {time.localtime()[3]}:{time.localtime()[4]}:{time.localtime()[5]}')
+    text = txs.show_balance_text(sum, lang)
+    basic_keyboard = kbs.basic_markup(lang)
+    await message.answer(text=text, reply_markup=basic_keyboard)
 
 async def delete_coin(message: types.Message):
+    lang = message.from_user.language_code
+    text = txs.delete_coin_text(lang)
     coins = await sql_db.get_coins(message.from_user.id)
-    await message.reply('Выберите криптовалюту которую вы хотите удалить!')
+    await message.reply(text=text)
     for coin in coins:
-        await message.answer(f'Криптовалюта: {coin[1]} \nКоличество: {coin[2]}', reply_markup=InlineKeyboardMarkup(resize=True).add(InlineKeyboardButton(text=f'Удалить {coin[1]}', callback_data=f'del{coin[1]}')))
+        inline_text = txs.delete_coin_inline_text(coin, lang)
+        delete_inline_keyboard = kbs.delete_coin_inline_markup(coin, lang)
+        await message.answer(text=inline_text, reply_markup=delete_inline_keyboard)
 
 async def deletion_callback(callback_query: types.CallbackQuery):
     await sql_db.del_coin(callback_query.from_user.id, callback_query.data.replace('del', ''))
-    await callback_query.answer(text='Успешно удалено!')
+    await callback_query.answer(text='Delted!')
 
 def register_handlers(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
     
-    dp.register_message_handler(cancel, Text(equals='Отменить'), state='*')
-    dp.register_message_handler(add_coin, Text(equals='Добавить Монету'), state=None)
+    dp.register_message_handler(cancel, Text(contains='\U00002716'), state='*')
+    dp.register_message_handler(add_coin, Text(contains='\U0001F4B5'), state=None)
     dp.register_message_handler(set_code, state=FSMClient.coin_code)
     dp.register_message_handler(set_amount, state=FSMClient.amount)
 
-    dp.register_message_handler(delete_coin, Text(equals='Удалить Монету'))
+    dp.register_message_handler(delete_coin, Text(contains='\U0001F4C9'))
     dp.register_callback_query_handler(deletion_callback, Text(startswith='del'))
 
-    dp.register_message_handler(show_balance, Text(equals='Мой баланс'))
-    dp.register_message_handler(show_portfolio, Text(equals='Моё портфолио'))
+    dp.register_message_handler(show_balance, Text(contains='\U0001F4B0'))
+    dp.register_message_handler(show_portfolio, Text(contains='\U0001F4CB'))
 
