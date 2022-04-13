@@ -41,6 +41,7 @@ async def add_coin(message: types.Message):
 
 async def set_code(message: types.Message, state: FSMContext):
     #TODO: implement merge of the same cryptocurrency
+    
     lang = message.from_user.language_code
     text = txs.add_coin_amount(lang)
     cancel_keyboard = kbs.cancel_markup(lang)
@@ -54,7 +55,14 @@ async def set_amount(message: types.Message, state: FSMContext):
     text = txs.add_coin_added(lang)
     basic_keyboard = kbs.basic_markup(lang)
     async with state.proxy() as data:
-        data['amount'] = message.text
+        coins = await sql_db.get_coins(message.from_user.id)
+        amount = message.text
+        for coin in coins:
+            if str(data['coin_code']) == str(coin[1]):
+                amount = float(message.text) + float(coin[2])
+                await sql_db.del_coin(message.from_user.id, data['coin_code'])
+                break
+        data['amount'] = str(amount)
     await sql_db.add_coin(state, message.from_user.id)
     await FSMClient.next()
     await message.reply(text=text, reply_markup=basic_keyboard)
@@ -110,7 +118,7 @@ async def show_balance(message: types.Message):
             sum += float(result.json()['data']['quote']['USD']['price'])
         except KeyError:
             continue
-    # await message.answer(f'Сейчас: {time.localtime()[2]}/{time.localtime()[1]}/{time.localtime()[0]} | Время: {time.localtime()[3]}:{time.localtime()[4]}:{time.localtime()[5]}')
+
     text = txs.show_balance_text(sum, lang)
     basic_keyboard = kbs.basic_markup(lang)
     await message.answer(text=text, reply_markup=basic_keyboard)
