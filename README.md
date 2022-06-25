@@ -1,2 +1,1 @@
-# cryptolio_bot
-A telegram bot to show $USD equivalent of your cryptocurrency portfolio.
+To see the bot in action visit [Cryptolio](https://t.me/cryptolio_bot)
