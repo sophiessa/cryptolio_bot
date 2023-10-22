@@ -42,7 +42,7 @@ def show_portfolio_text(coin, price, lang='ru'):
 
 def show_balance_text(sum, lang='ru'):
     return {
-        'ru': "На вашем балансе есть%.2f$!" % sum,
+        'ru': "На вашем балансе есть %.2f$!" % sum,
         'en': "You have %.2f$ in your balance!" % sum,
         'kg': "Сиздин балансынызда %.2f$ бар!" % sum,
     }[lang]

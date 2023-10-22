@@ -14,8 +14,12 @@ import sql_db
 import keyboards as kbs
 import texts as txs
 
+
+#load .env file
 dotenv.load_dotenv()
 
+
+#header for coinmarketcap api, currently the base version with 10,000 requests/month
 headers = {
     'X-CMC_PRO_API_KEY': os.getenv('COINMARKETCAP_TOKEN'),
 }
@@ -136,6 +140,13 @@ async def delete_coin(message: types.Message):
 async def deletion_callback(callback_query: types.CallbackQuery):
     await sql_db.del_coin(callback_query.from_user.id, callback_query.data.replace('del', ''))
     await callback_query.answer(text='Delted!')
+
+
+
+#TODO: add language selection in chat
+async def change_language():
+    pass
+
 
 def register_handlers(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])

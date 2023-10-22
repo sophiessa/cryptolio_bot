@@ -18,6 +18,10 @@ async def add_coin(state, id):
         cur.execute(f"INSERT INTO balances VALUES ({id}, ?, ?)", tuple(data.values()))
         base.commit()
 
+async def subract_coin(state, id):
+    #TODO: subract certain amount from the balance of a certain coin
+    pass
+
 async def del_coin(id: str, coin_code: str):
     cur.execute(f"DELETE FROM balances WHERE id = {id} AND coin_code = '{coin_code}'")
     base.commit()
