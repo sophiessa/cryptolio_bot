@@ -60,3 +60,11 @@ def delete_coin_inline_text(coin, lang='ru'):
         'en': f'Cryptocurrency: {coin[1]} \nAmount: {coin[2]}',
         'kg': f'Криптоакча: {coin[1]} \nСаны: {coin[2]}',
     }[lang]
+
+
+def choose_language(lang='ru'):
+    return {
+        'ru': f'VYBERITE YAZYK',
+        'en': f'CHOOSE A LANGUAGE',
+        'kg': f'TIL TANDANYZ',
+    }[lang]

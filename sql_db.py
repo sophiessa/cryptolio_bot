@@ -10,12 +10,26 @@ def start_database():
 
     if base:
         print('connected to the main.db.......')
-    
-    base.execute('CREATE TABLE IF NOT EXISTS balances(id TEXT, coin_code TEXT, amount TEXT)')
+        
+    #TODO: change to user_id, instead of using chat_id
 
-async def add_coin(state, id):
+    #a table for users
+    base.execute('CREATE TABLE IF NOT EXISTS users(chat_id TEXT UNIQUE, username TEXT, language TEXT)')
+    #a table for coin entries of users, consists of the chat_id (might change to user_id in the future), coin name and the amount of coins
+    base.execute('CREATE TABLE IF NOT EXISTS wallet(chat_id TEXT, coin_code TEXT, amount INTEGER, )')
+
+
+async def add_user(chat_id, username, language):
+    await cur.execute(f'INSERT OR IGNORE INTO users VALUES ({chat_id}, {username}, {language})')
+    base.commit()
+
+
+async def get_lang(chat_id):
+    await cur.execute(f'SELECT lang FROM users WHERE chat_id = {chat_id}')
+
+async def add_coin(state, id, lang):
     async with state.proxy() as data:
-        cur.execute(f"INSERT INTO balances VALUES ({id}, ?, ?)", tuple(data.values()))
+        cur.execute(f"INSERT INTO balances VALUES ({id}, ?, ?, {lang})", tuple(data.values()))
         base.commit()
 
 async def subract_coin(state, id):
