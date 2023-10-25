@@ -5,7 +5,7 @@ import handlers
 import sql_db
 
 async def on_startup(_):
-    sql_db.start_database()
+    await sql_db.start_database()
     print('cryptolio_bot is started.....')
 
 handlers.register_handlers(dp)

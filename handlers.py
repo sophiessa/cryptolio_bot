@@ -26,33 +26,34 @@ headers = {
 
 #State Machine for coin addition, ask for the coin code and the amount.
 class FSMClient(StatesGroup):
-    id =        State()
+    user_id =   State()
+    chat_id =   State()
     coin_code = State()
     amount =    State()
 
 async def start(message: types.Message):
     lang = message.from_user.language_code
+    user_id = message.from_user.id
     chat_id = message.chat.id
     username = message.from_user.username
 
-    sql_db.add_user(chat_id=chat_id, username=username, language=lang)
-
+    test = await sql_db.add_user(user_id=user_id, chat_id=chat_id, username=username, language=lang)
     text = txs.start_message(lang)
     start_keyboard = kbs.basic_markup(lang)
 
     await message.answer(text, reply_markup=start_keyboard)
 
 async def add_coin(message: types.Message):
-    chat_id = message.chat.id
-    lang = sql_db.get_lang(chat_id=chat_id)
+    user_id = message.from_user.id
+    lang = await sql_db.get_lang(user_id=user_id)
     text = txs.add_coin_code(lang)
     cancel_keyboard = kbs.cancel_markup(lang)
     await FSMClient.coin_code.set()
     await message.answer(text=text, reply_markup=cancel_keyboard)
 
 async def set_code(message: types.Message, state: FSMContext):
-    chat_id = message.chat.id
-    lang = sql_db.get_lang(chat_id=chat_id)
+    user_id = message.from_user.id
+    lang = await sql_db.get_lang(user_id=user_id)
     text = txs.add_coin_amount(lang)
     cancel_keyboard = kbs.cancel_markup(lang)
     async with state.proxy() as data:
@@ -60,28 +61,30 @@ async def set_code(message: types.Message, state: FSMContext):
     await FSMClient.next()
     await message.reply(text=text, reply_markup=cancel_keyboard)
 
+
 async def set_amount(message: types.Message, state: FSMContext):
-    chat_id = message.chat.id
-    lang = sql_db.get_lang(chat_id=chat_id)
+    user_id = message.from_user.id
+    lang = await sql_db.get_lang(user_id=user_id)
     text = txs.add_coin_added(lang)
     basic_keyboard = kbs.basic_markup(lang)
     async with state.proxy() as data:
-        coins = await sql_db.get_coins(message.from_user.id)
+        coin = await sql_db.get_coins(user_id, data['coin_code'])
         amount = message.text
-        for coin in coins:
-            if str(data['coin_code']) == str(coin[1]):
-                amount = float(message.text) + float(coin[2])
-                await sql_db.del_coin(message.from_user.id, data['coin_code'])
-                break
+        
+        if coin is not None and str(data['coin_code']) == str(coin[1]):
+            amount = float(message.text) + float(coin[2])
+            await sql_db.del_coin(message.from_user.id, data['coin_code'])
+            
         data['amount'] = str(amount)
-    await sql_db.add_coin(state, message.from_user.id, lang)
+    await sql_db.add_coin(state, user_id)
     await FSMClient.next()
     await message.reply(text=text, reply_markup=basic_keyboard)
     await state.finish()
 
 
 async def cancel(message: types.Message, state: FSMContext):
-    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    lang = await sql_db.get_lang(user_id=user_id)
     text = txs.add_coin_cancel(lang)
     basic_keyboard = kbs.basic_markup(lang)
     curr_state = await state.get_state()
