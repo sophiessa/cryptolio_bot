@@ -25,15 +25,13 @@ async def start_database():
 
 async def add_user(user_id, chat_id, username, language):
     async with aiosqlite.connect('main.db') as db:
-        await db.execute('INSERT INTO users (user_id, chat_id, username, language) VALUES (?, ?, ?, ?)', (user_id, chat_id, username, language))
+        await db.execute(f'INSERT OR REPLACE INTO users (user_id, chat_id, username, language) VALUES (?, ?, ?, ?)', (user_id, chat_id, username, language))
         await db.commit()
 
 
 async def get_lang(user_id):
     async with aiosqlite.connect('main.db') as db:
-        print(f'THE TYPE OF USER ID IS {type(user_id)}')
         cursor = await db.execute('SELECT language FROM users WHERE user_id = ?', (user_id,))
-        
         row = await cursor.fetchone()
         if row:
             return row[0]
@@ -52,7 +50,7 @@ async def add_coin(state, user_id):
             await db.commit()
 
 
-async def get_coins(user_id, coin_code):
+async def get_coin(user_id, coin_code):
     async with aiosqlite.connect('main.db') as db:
         cursor = await db.execute('SELECT * FROM wallets WHERE user_id = ? AND coin_code = ?', (user_id, coin_code))
         row = await cursor.fetchone()
@@ -60,6 +58,16 @@ async def get_coins(user_id, coin_code):
             return row[0]
         else:
             return None
+        
+async def get_coins(user_id):
+    async with aiosqlite.connect('main.db') as db:
+        cursor = await db.execute('SELECT * FROM wallets WHERE user_id = ?', (user_id,))
+        rows = await cursor.fetchall()
+        if rows:
+            return rows
+        else:
+            return None
+
         
 async def del_coin(user_id, coin_code):
     async with aiosqlite.connect('main.db') as db:
