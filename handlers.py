@@ -36,11 +36,10 @@ async def start(message: types.Message):
     user_id = message.from_user.id
     chat_id = message.chat.id
     username = message.from_user.username
-
-    test = await sql_db.add_user(user_id=user_id, chat_id=chat_id, username=username, language=lang)
+    await sql_db.add_user(user_id=user_id, chat_id=chat_id, username=username, language=lang)
+    #TODO: send a message with the name or username included in the text
     text = txs.start_message(lang)
     start_keyboard = kbs.basic_markup(lang)
-
     await message.answer(text, reply_markup=start_keyboard)
 
 async def add_coin(message: types.Message):
@@ -51,6 +50,7 @@ async def add_coin(message: types.Message):
     await FSMClient.coin_code.set()
     await message.answer(text=text, reply_markup=cancel_keyboard)
 
+#TODO: check the validity of cryptocurrency code
 async def set_code(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     lang = await sql_db.get_lang(user_id=user_id)
@@ -62,13 +62,14 @@ async def set_code(message: types.Message, state: FSMContext):
     await message.reply(text=text, reply_markup=cancel_keyboard)
 
 
+#TODO: might do it better
 async def set_amount(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     lang = await sql_db.get_lang(user_id=user_id)
     text = txs.add_coin_added(lang)
     basic_keyboard = kbs.basic_markup(lang)
     async with state.proxy() as data:
-        coin = await sql_db.get_coins(user_id, data['coin_code'])
+        coin = await sql_db.get_coin(user_id, data['coin_code'])
         amount = message.text
         
         if coin is not None and str(data['coin_code']) == str(coin[1]):
@@ -95,7 +96,8 @@ async def cancel(message: types.Message, state: FSMContext):
 
 
 async def show_portfolio(message: types.Message):
-    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    lang = await sql_db.get_lang(user_id=user_id)
     coins = await sql_db.get_coins(message.from_user.id)
     for coin in coins:
         price = 0
