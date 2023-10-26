@@ -98,7 +98,10 @@ async def cancel(message: types.Message, state: FSMContext):
 async def show_portfolio(message: types.Message):
     user_id = message.from_user.id
     lang = await sql_db.get_lang(user_id=user_id)
-    coins = await sql_db.get_coins(message.from_user.id)
+    coins = await sql_db.get_coins(user_id)
+    if coins is None:
+        #TODO: send a message saying there is nothing in the wallet
+        return 0
     for coin in coins:
         price = 0
         parameters = {
@@ -119,8 +122,12 @@ async def show_portfolio(message: types.Message):
     
 
 async def show_balance(message: types.Message):
-    lang = message.from_user.language_code
-    coins = await sql_db.get_coins(message.from_user.id)
+    user_id = message.from_user.id
+    lang = await sql_db.get_lang(user_id=user_id)
+    coins = await sql_db.get_coins(user_id=user_id)
+    if coins is None:
+        #TODO: send a message saying there is nothing in the wallet
+        return 0
     sum = 0
     for coin in coins:
         parameters = {
@@ -140,9 +147,13 @@ async def show_balance(message: types.Message):
     await message.answer(text=text, reply_markup=basic_keyboard)
 
 async def delete_coin(message: types.Message):
-    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    lang = await sql_db.get_lang(user_id=user_id)
     text = txs.delete_coin_text(lang)
-    coins = await sql_db.get_coins(message.from_user.id)
+    coins = await sql_db.get_coins(user_id=user_id)
+    if coins is None:
+        #TODO: send a message saying there is nothing in the wallet
+        return 0
     await message.reply(text=text)
     for coin in coins:
         inline_text = txs.delete_coin_inline_text(coin, lang)
@@ -156,16 +167,17 @@ async def deletion_callback(callback_query: types.CallbackQuery):
 
 
 async def change_language(message: types.Message):
-    lang = message.from_user.language_code
+    user_id = message.from_user.id
+    lang = await sql_db.get_lang(user_id=user_id)
     text = txs.choose_language(lang)
     choose_language_inline_keyaboard = kbs.choose_language_inline_markup()
     await message.answer(text, reply_markup=choose_language_inline_keyaboard)
 
 async def change_language_callback(callback_query: types.CallbackQuery):
     lang = callback_query.data.replace('language_', '')
-    text = cts.change_language(lang)
-    await sql_db.update_language(callback_query.from_user.id, lang)
-    await callback_query.message.answer(text=text, reply_markup=ckbs.start_markup(lang))
+    text = txs.start_message(lang)
+    await sql_db.set_lang(callback_query.from_user.id, lang)
+    await callback_query.message.answer(text=text, reply_markup=kbs.basic_markup(lang))
     await callback_query.answer()
 
 
@@ -185,3 +197,4 @@ def register_handlers(dp: Dispatcher):
     dp.register_message_handler(show_portfolio, Text(contains='\U0001F4CB'))
 
     dp.register_message_handler(change_language, Text(contains='\U0001F4C1'))
+    dp.register_callback_query_handler(change_language_callback, Text(startswith='language'))
