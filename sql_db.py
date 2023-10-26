@@ -38,6 +38,11 @@ async def get_lang(user_id):
         else:
             return None
         
+async def set_lang(user_id, language):
+    async with aiosqlite.connect('main.db') as db:
+        await db.execute('UPDATE users SET language = ? WHERE user_id = ?', (language, user_id))
+        await db.commit()
+        
 
 
 
