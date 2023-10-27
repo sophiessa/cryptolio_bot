@@ -2,7 +2,7 @@ def start_message(lang='ru'):
     return {
         'ru': 'Здравствуйте, что бы вы хотели сделать?',
         'en': 'Hi, what do you want to do?',
-        'kg': 'KGZ START MESSAGE',
+        'kg': 'Саламатсыздар, эмне кылууну каалайсыз?',
     }[lang]
 
 def add_coin_code(lang='ru'):
