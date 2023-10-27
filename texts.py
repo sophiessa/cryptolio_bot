@@ -64,7 +64,7 @@ def delete_coin_inline_text(coin, lang='ru'):
 
 def choose_language(lang='ru'):
     return {
-        'ru': f'VYBERITE YAZYK',
-        'en': f'CHOOSE A LANGUAGE',
-        'kg': f'TIL TANDANYZ',
+        'ru': f'Выберите язык!',
+        'en': f'Choose a language!',
+        'kg': f'Тил танданыз!',
     }[lang]
